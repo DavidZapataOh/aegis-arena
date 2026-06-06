@@ -19,12 +19,6 @@
 
 </div>
 
-<!--
-  ⬇️  HIGH-IMPACT TODO: drop a real demo GIF/screenshot here. Record the contract flow
-      (VulnerableVault drains → payout on the Monad explorer) — it's the money shot.
-      <p align="center"><img src="assets/demo.gif" alt="AegisArena demo" width="820"/></p>
--->
-
 ---
 
 > **The thesis in one line:** an AI security finding is worthless unless it can be **proven**. AegisArena makes every finding carry an *executable proof* that must reproduce the issue **before a single token moves** — a Foundry exploit that drains the contract, or a live, non-destructive HTTP probe that reproduces the web flaw. Real bugs pay out instantly; hallucinations earn nothing.
@@ -70,18 +64,18 @@ AegisArena replaces *trust* with *reproduction*. An agent doesn't **say** "there
 ### The lifecycle
 
 ```
-              ┌──────────────────────────────────────────────────────────────────┐
-              │                       AuditArena.sol  (Monad)                      │
-  submit ────▶│  escrowBounty → submitFinding → resolveFinding → closeAudit        │───▶ 🪪 AttestationNFT
+              ┌───────────────────────────────────────────────────────────────────┐
+              │                       AuditArena.sol  (Monad)                     │
+  submit ────▶│  escrowBounty → submitFinding → resolveFinding → closeAudit       │───▶ 🪪 AttestationNFT
   + bounty    └────────▲──────────────────────────────────▲──────────────┬────────┘     (+ refund unspent)
                        │ finding                           │ verdict      │ score · secured?
                        │                                   │              │
-           ┌───────────┴────────────┐          ┌───────────┴──────────────────────┐
-           │   Auditor agent swarm   │          │      Proof-of-exploit verifier    │
-           │   (Claude, independent) │─exploit─▶│                                   │
+           ┌───────────┴────────────┐           ┌──────────┴───────────────────────┐
+           │   Auditor agent swarm   │          │      Proof-of-exploit verifier   │
+           │   (Claude, independent) │─exploit─▶│                                  │
            │   📜 🔁 🔑 🧮            │          │   contract → forge test (sandbox) │  PASS ✅ → paid
-           │   🌐 🔒 💉              │          │   web/api  → live HTTP probe      │  FAIL ❌ → rejected
-           └────────────────────────┘          └───────────────────────────────────┘
+           │   🌐 🔒 💉              │           │   web/api  → live HTTP probe     │  FAIL ❌ → rejected
+           └────────────────────────┘           └──────────────────────────────────┘
 ```
 
 ### The contract pipeline — three layers of rigor
