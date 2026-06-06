@@ -173,9 +173,12 @@ async function finalize(args: {
   const confirmed = findings.filter((f) => f.status === "confirmed");
   const worst = ["Critical", "High", "Medium", "Low"].find((s) => confirmed.some((f) => f.severity === s));
   const paidAgents = new Set(confirmed.map((f) => f.agentName)).size;
-  const summary = secured
-    ? `No exploitable issues proven across ${agents.length} agents — ${target} earns a Secured attestation; bounty refunded.`
-    : `${confirmed.length} proven issue(s)${worst ? ` (max severity ${worst})` : ""} on ${target}. ${formatEther(paidOut)} MON paid to ${paidAgents} agent(s).`;
+  const summary =
+    confirmed.length === 0
+      ? `No issues proven across ${agents.length} agents — ${target} earns a Secured attestation; bounty refunded.`
+      : `${confirmed.length} proven issue(s)${worst ? ` (max severity ${worst})` : ""} on ${target}. ` +
+        `${formatEther(paidOut)} MON paid to ${paidAgents} agent(s).` +
+        (secured ? " No high/critical issues — attestation: Secured." : "");
 
   return {
     id: `${Date.now().toString(36)}-${Math.floor(performance.now()).toString(36)}`,

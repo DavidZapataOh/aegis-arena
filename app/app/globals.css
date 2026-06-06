@@ -185,4 +185,35 @@ details.poc pre {
   border-top-color: var(--purple); border-radius: 50%; animation: rot 0.7s linear infinite; vertical-align: -2px; }
 @keyframes rot { to { transform: rotate(360deg); } }
 
-footer { margin-top: 40px; color: var(--muted); font-size: 12.5px; text-align: center; }
+/* how-it-works strip */
+.howto { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+@media (max-width: 700px) { .howto { grid-template-columns: 1fr; } }
+.howto .step {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.howto .step b { font-size: 13px; color: var(--purple); }
+.howto .step span { font-size: 12px; color: var(--muted); }
+
+/* url input + authorization */
+input.url {
+  width: 100%; background: #0c0c16; color: #d6d6ea; border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px; font-family: var(--mono); font-size: 14px;
+}
+input.url:focus { outline: none; border-color: var(--purple-dim); }
+.authz {
+  display: flex; gap: 10px; align-items: flex-start; margin-top: 12px;
+  font-size: 12.5px; color: var(--muted); line-height: 1.5;
+}
+.authz input { margin-top: 3px; accent-color: var(--purple); width: 16px; height: 16px; }
+.authz strong { color: var(--text); }
+
+/* finding rows inside an agent card */
+.finding { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; }
+.frow { display: flex; align-items: center; gap: 8px; }
+.ftitle { font-size: 13px; font-weight: 600; flex: 1; }
+.fstat { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; }
+.fix { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.fix strong { color: #a9b4ff; }
+
+footer { margin-top: 40px; color: var(--muted); font-size: 12.5px; text-align: center; line-height: 1.6; }
