@@ -4,7 +4,9 @@ import { SEVERITY_INDEX } from "./types";
 import { AGENTS, runAgents } from "./agents";
 import { WEB_AGENTS, runWebAudit } from "./webagents";
 import { runExploit } from "./sandbox";
+import { runSlither } from "./staticscan";
 import { extractContractName } from "./examples";
+import type { StaticFinding } from "./types";
 import { Chain, isOnchain } from "./chain";
 import { DEMO_MODE, DEFAULT_BOUNTY_MON, MONAD_TESTNET } from "./config";
 
@@ -33,10 +35,15 @@ function scoreOf(findings: Finding[]): { score: number; secured: boolean } {
   return { score: Math.max(0, s), secured };
 }
 
-// ── Contract audits: agents claim -> Foundry sandbox verifies ────────────────
-async function buildContractFindings(code: string): Promise<{ findings: Finding[]; agents: AgentSummary[] }> {
+// ── Contract audits: Slither grounds the agents -> Foundry sandbox proves ────
+async function buildContractFindings(code: string): Promise<{
+  findings: Finding[];
+  agents: AgentSummary[];
+  staticAnalysis?: { tool: string; findings: StaticFinding[] };
+}> {
   const contractName = extractContractName(code);
-  const claims = await runAgents(contractName, code);
+  const scan = await runSlither(code); // OSS static-analysis leads (best-effort)
+  const claims = await runAgents(contractName, code, scan.findings);
   const findings: Finding[] = [];
 
   for (const claim of claims) {
@@ -69,7 +76,8 @@ async function buildContractFindings(code: string): Promise<{ findings: Finding[
     }
     findings.push(f);
   }
-  return { findings, agents: toSummary(AGENTS) };
+  const staticAnalysis = scan.available ? { tool: scan.tool, findings: scan.findings } : undefined;
+  return { findings, agents: toSummary(AGENTS), staticAnalysis };
 }
 
 /** Run a full audit of any target kind, then settle (on-chain or simulated). */
@@ -84,12 +92,13 @@ export async function runAudit(input: {
   let agents: AgentSummary[];
   let target: string;
   let codeURI: string;
+  let staticAnalysis: { tool: string; findings: StaticFinding[] } | undefined;
 
   if (kind === "contract") {
     const code = (input.code || "").trim() + "\n";
     target = extractContractName(code);
     codeURI = `inline://${target}`;
-    ({ findings, agents } = await buildContractFindings(code));
+    ({ findings, agents, staticAnalysis } = await buildContractFindings(code));
   } else {
     const url = (input.target || "").trim();
     const res = await runWebAudit(kind, url);
@@ -104,7 +113,7 @@ export async function runAudit(input: {
   }
 
   const title = (input.title || target).slice(0, 80);
-  return finalize({ kind, target, title, codeURI, findings, agents });
+  return finalize({ kind, target, title, codeURI, findings, agents, staticAnalysis });
 }
 
 async function finalize(args: {
@@ -114,8 +123,9 @@ async function finalize(args: {
   codeURI: string;
   findings: Finding[];
   agents: AgentSummary[];
+  staticAnalysis?: { tool: string; findings: StaticFinding[] };
 }): Promise<AuditResult> {
-  const { kind, target, title, codeURI, findings, agents } = args;
+  const { kind, target, title, codeURI, findings, agents, staticAnalysis } = args;
   const bountyWei = parseEther(DEFAULT_BOUNTY_MON);
   const onchain = isOnchain();
   const txs: { label: string; hash: string }[] = [];
@@ -191,6 +201,7 @@ async function finalize(args: {
     demoMode: DEMO_MODE && kind === "contract", // web/api probes are always real
     status: "closed",
     summary,
+    staticAnalysis,
     agents,
     findings,
     score,

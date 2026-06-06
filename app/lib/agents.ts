@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { ANTHROPIC_API_KEY, AGENT_MODEL, AGENT_EFFORT, DEMO_MODE } from "./config";
-import type { AgentSpec, Severity } from "./types";
+import type { AgentSpec, Severity, StaticFinding } from "./types";
 import { reentrancyExploit } from "./examples";
 
 // Three independent auditor agents, each a different "person" with a payout address.
@@ -79,11 +79,20 @@ ${reentrancyExploit(contractName)}
 If, after analysis, you cannot construct a passing proof for an exploitable issue in your specialty, set vulnerability_found=false, severity="None", and exploit_test="". Do not pad with speculative or low-confidence findings.`;
 }
 
+function staticHintsBlock(hints: StaticFinding[], focusId: string): string {
+  if (!hints.length) return "";
+  const lines = hints
+    .map((h) => `- [${h.impact}/${h.confidence}] ${h.check}: ${h.description}`)
+    .join("\n");
+  return `\n\nAn open-source static analyzer (Slither) flagged these LEADS on this contract:\n${lines}\n\nTreat them as candidates, not conclusions: investigate the ones in your specialty, PROVE the real ones with a passing PoC, and ignore Slither's false positives. You may also report issues Slither missed.`;
+}
+
 async function callAgent(
   client: Anthropic,
   spec: AgentSpec,
   contractName: string,
-  source: string
+  source: string,
+  staticHints: StaticFinding[]
 ): Promise<AgentClaim> {
   try {
     const res = await client.messages.create({
@@ -95,7 +104,7 @@ async function callAgent(
       messages: [
         {
           role: "user",
-          content: `Audit this contract (importable as ${contractName} from ../src/Target.sol):\n\n\`\`\`solidity\n${source}\n\`\`\``,
+          content: `Audit this contract (importable as ${contractName} from ../src/Target.sol):\n\n\`\`\`solidity\n${source}\n\`\`\`${staticHintsBlock(staticHints, spec.id)}`,
         },
       ],
     } as any);
@@ -154,8 +163,12 @@ function demoClaims(contractName: string): AgentClaim[] {
   });
 }
 
-export async function runAgents(contractName: string, source: string): Promise<AgentClaim[]> {
+export async function runAgents(
+  contractName: string,
+  source: string,
+  staticHints: StaticFinding[] = []
+): Promise<AgentClaim[]> {
   if (DEMO_MODE) return demoClaims(contractName);
   const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-  return Promise.all(AGENTS.map((spec) => callAgent(client, spec, contractName, source)));
+  return Promise.all(AGENTS.map((spec) => callAgent(client, spec, contractName, source, staticHints)));
 }

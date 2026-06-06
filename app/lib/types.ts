@@ -23,6 +23,15 @@ export interface AgentSpec {
 
 export type AgentSummary = Omit<AgentSpec, "payoutAddress">;
 
+// A lead from an open-source static analyzer (Slither). These are CANDIDATES — the
+// agents must still prove the real ones with a PoC. High recall; the PoC gives precision.
+export interface StaticFinding {
+  check: string; // detector id, e.g. "reentrancy-eth"
+  impact: string; // High | Medium | Low
+  confidence: string; // High | Medium | Low
+  description: string;
+}
+
 // How a finding was verified. tool="forge" for contracts, tool="http" for web/api.
 export interface Verification {
   tool: "forge" | "http";
@@ -62,6 +71,7 @@ export interface AuditResult {
   demoMode: boolean;
   status: "running" | "closed";
   summary: string; // short analyst summary of the run
+  staticAnalysis?: { tool: string; findings: StaticFinding[] }; // OSS scanner leads (contracts)
   agents: AgentSummary[]; // roster, for grouping findings in the arena
   findings: Finding[];
   score: number;

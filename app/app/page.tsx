@@ -36,7 +36,7 @@ function WalletButton() {
         </button>
       )}
       <span className="pill">{short(address)}</span>
-      <button className="btn ghost" onClick={() => disconnect()}>
+      <button className="btn ghost" onClick={() => disconnect()} aria-label="Disconnect wallet" title="Disconnect">
         ✕
       </button>
     </div>
@@ -139,6 +139,29 @@ function Result({ r }: { r: AuditResult }) {
         </div>
       </div>
 
+      {r.staticAnalysis && r.staticAnalysis.findings.length > 0 && (
+        <div className="panel">
+          <h3>
+            🔬 Static analysis ({r.staticAnalysis.tool}) — {r.staticAnalysis.findings.length} lead
+            {r.staticAnalysis.findings.length > 1 ? "s" : ""}
+          </h3>
+          <p className="muted small" style={{ marginTop: -6 }}>
+            Open-source scanner leads (high recall). Confirmed ones are <strong>proven</strong> by the agents in the
+            Arena below; unproven candidates pay nothing.
+          </p>
+          <div className="leads">
+            {r.staticAnalysis.findings.map((s, i) => (
+              <div key={i} className="lead">
+                <span className={`tag-sev sev-${s.impact}`}>{s.impact}</span>
+                <code className="mono">{s.check}</code>
+                <span className="muted small"> · conf {s.confidence}</span>
+                <div className="desc">{s.description}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="panel">
         <h3>⚔️ The Arena — {KINDS.find((k) => k.id === r.kind)?.emoji} {r.target}</h3>
         <div className="agents">
@@ -210,7 +233,7 @@ export default function Home() {
 
   return (
     <div className="wrap">
-      <div className="topbar">
+      <header className="topbar">
         <div className="brand">
           <div className="logo">🛡️</div>
           <div>
@@ -219,9 +242,11 @@ export default function Home() {
           </div>
         </div>
         <WalletButton />
-      </div>
+      </header>
 
-      <div className="hero">
+      <main>
+      <section className="hero">
+        <div className="kicker">Proof-of-Exploit Protocol · Monad Testnet</div>
         <h2>
           A swarm of AI auditors that <span className="accent">prove</span> the bug across your{" "}
           <span className="accent">contracts, frontend &amp; backend</span> — then get paid.
@@ -232,7 +257,7 @@ export default function Home() {
           exploit that drains the contract, or a non-destructive HTTP probe that reproduces the web flaw. Proven bugs
           pay out instantly on Monad; hallucinations earn nothing.
         </p>
-      </div>
+      </section>
 
       <div className="howto">
         <div className="step"><b>1 · Submit</b><span>contract source, or a URL you own</span></div>
@@ -244,8 +269,10 @@ export default function Home() {
         <h3>1 · Choose a target type</h3>
         <div className="examples">
           {KINDS.map((k) => (
-            <div
+            <button
+              type="button"
               key={k.id}
+              aria-pressed={kind === k.id}
               className={`chip ${kind === k.id ? "active" : ""}`}
               onClick={() => {
                 setKind(k.id);
@@ -255,7 +282,7 @@ export default function Home() {
             >
               {k.emoji} {k.label}
               <small>{k.blurb}</small>
-            </div>
+            </button>
           ))}
         </div>
 
@@ -263,10 +290,16 @@ export default function Home() {
           <>
             <div className="examples">
               {EXAMPLES.map((ex) => (
-                <div key={ex.key} className={`chip ${picked === ex.key ? "active" : ""}`} onClick={() => pickExample(ex)}>
+                <button
+                  type="button"
+                  key={ex.key}
+                  aria-pressed={picked === ex.key}
+                  className={`chip ${picked === ex.key ? "active" : ""}`}
+                  onClick={() => pickExample(ex)}
+                >
                   {ex.title}
                   <small>{ex.hint}</small>
-                </div>
+                </button>
               ))}
             </div>
             <textarea value={code} onChange={(e) => setCode(e.target.value)} spellCheck={false} />
@@ -299,7 +332,7 @@ export default function Home() {
               ? "Verified by a real Foundry sandbox"
               : "Live, rate-limited, non-destructive HTTP probes (OWASP-aligned)"}
           </span>
-          <button className="btn big" onClick={run} disabled={running || !canRun}>
+          <button className="btn big" onClick={run} disabled={running || !canRun} aria-busy={running}>
             {running ? (
               <><span className="spin" /> &nbsp;Agents auditing…</>
             ) : (
@@ -345,6 +378,7 @@ export default function Home() {
           <Result r={result} />
         </>
       )}
+      </main>
 
       <footer>
         AegisArena · proof-of-exploit audits for contracts, web &amp; APIs · built for the Monad hackathon · agents are
