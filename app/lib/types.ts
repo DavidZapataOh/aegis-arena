@@ -10,44 +10,59 @@ export const SEVERITY_INDEX: Record<Severity, number> = {
 
 export type FindingStatus = "pending" | "confirmed" | "rejected";
 
+// What kind of asset is being audited. Settlement is identical across all three.
+export type AuditKind = "contract" | "web" | "api";
+
 export interface AgentSpec {
   id: string;
-  name: string; // display name, e.g. "Reentrancy Hunter"
+  name: string;
   emoji: string;
-  focus: string; // short description of what it hunts
+  focus: string;
   payoutAddress: `0x${string}`;
+}
+
+export type AgentSummary = Omit<AgentSpec, "payoutAddress">;
+
+// How a finding was verified. tool="forge" for contracts, tool="http" for web/api.
+export interface Verification {
+  tool: "forge" | "http";
+  passed: boolean; // true => the exploit/issue actually reproduced
+  durationMs: number;
+  summary: string; // one-line verdict, e.g. "forge PASS → vault drained" / "header absent"
+  detail: string; // trimmed transcript / forge output
 }
 
 export interface Finding {
   agentId: string;
   agentName: string;
   agentEmoji: string;
-  claimed: boolean; // did the agent claim a vulnerability?
+  claimed: boolean; // did the agent claim an issue?
   severity: Severity;
+  category: string; // e.g. "Reentrancy", "Missing Security Headers", "Reflected XSS"
   title: string;
   rationale: string;
-  exploit: string; // the Foundry PoC test source
+  remediation?: string;
+  proof: string; // solidity exploit OR the HTTP request/response transcript
   status: FindingStatus;
-  verified: boolean; // did the sandbox reproduce it?
+  verified: boolean; // sandbox/probe reproduced it (paid) vs heuristic/unproven
   rewardWei: string; // "0" if none / simulated
-  sandbox?: {
-    durationMs: number;
-    forgePassed: boolean;
-    output: string; // trimmed forge output
-  };
-  txHash?: string; // resolveFinding tx (on-chain mode)
+  payoutAddress?: `0x${string}`;
+  verification?: Verification;
+  txHash?: string;
 }
 
 export interface AuditResult {
   id: string;
+  kind: AuditKind;
   title: string;
-  contractName: string;
-  code: string;
+  target: string; // contract name OR audited URL
   createdAt: number;
   bountyWei: string;
   onchain: boolean;
   demoMode: boolean;
   status: "running" | "closed";
+  summary: string; // short analyst summary of the run
+  agents: AgentSummary[]; // roster, for grouping findings in the arena
   findings: Finding[];
   score: number;
   secured: boolean;
