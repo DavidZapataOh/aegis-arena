@@ -1,0 +1,14 @@
+# Sandbox profile: the verifier drops a Target.sol + an agent-generated Exploit test here
+# and runs `forge test`. Kept lean (no optimizer / no via_ir) so each verification is fast.
+# forge-std is vendored under lib/ so runs never hit the network.
+[profile.default]
+src = "src"
+test = "test"
+out = "out"
+libs = ["lib"]
+solc = "0.8.28"
+optimizer = false
+evm_version = "cancun"
+remappings = ["forge-std/=lib/forge-std/src/"]
+# isolate test discovery to exploit files dropped at runtime
+fuzz = { runs = 64 }
